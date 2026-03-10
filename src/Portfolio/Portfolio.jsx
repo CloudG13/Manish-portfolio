@@ -78,22 +78,31 @@ export default function Portfolio() {
   const [active, setActive] = useState("About");
   const [isDark, setIsDark] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const containerRef = useRef(null);
 
   const scrollTo = (id) => {
     const el = document.getElementById("s-" + id.toLowerCase());
     if (!el || !containerRef.current) return;
-    containerRef.current.scrollTo({ top: el.offsetTop - 66, behavior: "smooth" });
+    const cRect = containerRef.current.getBoundingClientRect();
+    const rect = el.getBoundingClientRect();
+    const top = rect.top - cRect.top + containerRef.current.scrollTop;
+    containerRef.current.scrollTo({ top: top - 66, behavior: "smooth" });
   };
 
   useEffect(() => {
     const c = containerRef.current;
     if (!c) return;
     const fn = () => {
-      const sy = c.scrollTop + 140;
+      const cRect = c.getBoundingClientRect();
       for (const l of NAV_LINKS) {
         const el = document.getElementById("s-" + l.toLowerCase());
-        if (el && el.offsetTop <= sy && el.offsetTop + el.offsetHeight > sy) setActive(l);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top - cRect.top <= 140 && rect.bottom - cRect.top > 140) {
+            setActive(l);
+          }
+        }
       }
     };
     c.addEventListener("scroll", fn);
@@ -142,6 +151,17 @@ export default function Portfolio() {
         .reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s ease-out; }
         .reveal.visible { opacity: 1; transform: translateY(0); }
 
+        .hamburger { display: none; background: none; border: none; font-size: 24px; color: var(--text); cursor: pointer; padding: 4px; }
+        .mobile-menu {
+          position: fixed; top: 62px; left: 0; right: 0; background: var(--bg);
+          border-bottom: 1px solid var(--border);
+          padding: 20px 48px; display: flex; flex-direction: column; gap: 20px;
+          transform: translateY(-100%); opacity: 0; pointer-events: none;
+          transition: transform 0.3s ease, opacity 0.3s ease; z-index: 99;
+        }
+        .mobile-menu.open { transform: translateY(0); opacity: 1; pointer-events: auto; }
+
+
         .nav-btn {
           background: none; border: none; cursor: pointer;
           font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
@@ -170,6 +190,33 @@ export default function Portfolio() {
         .pill:hover { background: rgba(210,168,92,0.25); border-color: var(--gold); }
         .divider { width: 100%; height: 1px; background: var(--border); margin: 0; }
         a { text-decoration: none; color: inherit; }
+        
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+          .nav-links-desktop { display: none !important; }
+          .mobile-toggles { display: flex !important; }
+          .hamburger { display: block !important; }
+          .main-nav { padding: 0 20px !important; }
+          .mobile-menu { padding: 20px !important; }
+          
+          .hero-container { padding: 40px 20px 40px !important; }
+          .hero-top-wrap { flex-direction: column; align-items: center !important; text-align: center; gap: 24px !important; }
+          .hero-buttons { justify-content: center; }
+          .hero-title { font-size: 36px !important; }
+          
+          .section-container { padding: 0 20px !important; }
+          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .projects-grid { grid-template-columns: 1fr !important; }
+          .edu-grid { grid-template-columns: 1fr !important; }
+          .contact-grid { grid-template-columns: 1fr !important; }
+          
+          .footer-container { padding: 24px 20px !important; flex-direction: column; gap: 10px; text-align: center; }
+          .footer-container .dot { display: none; }
+          .footer-container p { flex-direction: column; gap: 4px; display: flex; }
+        }
+        @media (max-width: 480px) {
+          .stats-grid { grid-template-columns: 1fr !important; }
+        }
       `}</style>
 
       {/* ──────── SPLASH SCREEN ──────── */}
@@ -191,7 +238,7 @@ export default function Portfolio() {
       )}
 
       {/* ──────── NAVBAR ──────── */}
-      <nav className="fade-up" style={{
+      <nav className="fade-up main-nav" style={{
         position: "sticky", top: 0, zIndex: 100,
         background: isDark ? "rgba(13,17,23,0.92)" : "rgba(248,250,252,0.92)",
         backdropFilter: "blur(20px)",
@@ -213,7 +260,9 @@ export default function Portfolio() {
             Manish Kumar
           </span>
         </div>
-        <div style={{ display: "flex", gap: 30, alignItems: "center" }}>
+
+        {/* Desktop Links */}
+        <div className="nav-links-desktop" style={{ display: "flex", gap: 30, alignItems: "center" }}>
           {NAV_LINKS.map(l => (
             <button key={l} className={`nav-btn${active === l ? " on" : ""}`} onClick={() => scrollTo(l)}>{l}</button>
           ))}
@@ -231,14 +280,40 @@ export default function Portfolio() {
             {isDark ? "☀️" : "🌙"}
           </button>
         </div>
+
+        {/* Mobile Toggle Icons */}
+        <div className="mobile-toggles" style={{ display: "none", alignItems: "center", gap: 12 }}>
+          <button
+            onClick={() => setIsDark(!isDark)}
+            style={{
+              background: "var(--bg2)", border: "1px solid var(--border)", cursor: "pointer",
+              width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 16, transition: "transform 0.2s, background 0.2s",
+            }}
+          >
+            {isDark ? "☀️" : "🌙"}
+          </button>
+          <button className="hamburger" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+            {isMobileMenuOpen ? "✕" : "☰"}
+          </button>
+        </div>
       </nav>
 
+      {/* Mobile Dropdown Menu */}
+      <div className={`mobile-menu ${isMobileMenuOpen ? "open" : ""}`}>
+        {NAV_LINKS.map(l => (
+          <button key={l} className={`nav-btn${active === l ? " on" : ""}`} onClick={() => { scrollTo(l); setIsMobileMenuOpen(false); }} style={{ fontSize: 18, padding: "10px 0", textAlign: "left" }}>
+            {l}
+          </button>
+        ))}
+      </div>
+
       {/* ──────── HERO ──────── */}
-      <div id="s-about" style={{ position: "relative", maxWidth: 1040, margin: "0 auto", padding: "72px 48px 64px", overflow: "hidden" }}>
+      <div id="s-about" className="hero-container" style={{ position: "relative", maxWidth: 1040, margin: "0 auto", padding: "72px 48px 64px", overflow: "hidden" }}>
         {/* Ambient glow */}
         <div style={{ position: "absolute", top: -100, right: -100, width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(210,168,92,0.06) 0%, transparent 65%)", pointerEvents: "none" }} />
 
-        <div className="fade-up" style={{ display: "flex", alignItems: "flex-start", gap: 36, flexWrap: "wrap", marginBottom: 52 }}>
+        <div className="fade-up hero-top-wrap" style={{ display: "flex", alignItems: "flex-start", gap: 36, flexWrap: "wrap", marginBottom: 52 }}>
           {/* Avatar */}
           <div style={{ position: "relative", flexShrink: 0 }}>
             <div style={{ width: 108, height: 108, borderRadius: "50%", padding: "2.5px", background: "linear-gradient(135deg, #D2A85C, #5a4010, #D2A85C)" }}>
@@ -255,7 +330,7 @@ export default function Portfolio() {
               <span style={{ fontSize: 11, fontWeight: 700, color: "#D2A85C", letterSpacing: "0.1em", textTransform: "uppercase" }}>Available for Opportunities</span>
             </div>
 
-            <h1 className="fade-up-2" style={{ fontFamily: "'Fraunces', serif", fontSize: 48, fontWeight: 800, color: "var(--text)", lineHeight: 1.1, letterSpacing: "-0.03em", marginBottom: 6 }}>
+            <h1 className="fade-up-2 hero-title" style={{ fontFamily: "'Fraunces', serif", fontSize: 48, fontWeight: 800, color: "var(--text)", lineHeight: 1.1, letterSpacing: "-0.03em", marginBottom: 6 }}>
               Manish Kumar
             </h1>
             <h2 className="fade-up-2" style={{ fontFamily: "'Fraunces', serif", fontSize: 20, fontWeight: 300, fontStyle: "italic", color: "#D2A85C", marginBottom: 18, letterSpacing: "-0.01em" }}>
@@ -265,7 +340,7 @@ export default function Portfolio() {
               Experienced in <span style={{ color: "#D2A85C", fontWeight: 600 }}>AWS</span> and <span style={{ color: "#D2A85C", fontWeight: 600 }}>GCP</span>, with hands-on expertise in Docker, Kubernetes, and CI/CD automation. I design reliable infrastructure that scales and ships software faster.
             </p>
 
-            <div className="fade-up-3" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <div className="fade-up-3 hero-buttons" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <button onClick={() => scrollTo("Contact")} style={{
                 padding: "11px 26px", border: "none", borderRadius: 10, cursor: "pointer",
                 background: "linear-gradient(135deg, #D2A85C, #9A7530)",
@@ -292,7 +367,7 @@ export default function Portfolio() {
         </div>
 
         {/* Stats row */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, background: "var(--border)", borderRadius: 14, overflow: "hidden" }}>
+        <div className="stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, background: "var(--border)", borderRadius: 14, overflow: "hidden" }}>
           {STATS.map((s, i) => (
             <div key={i} style={{ background: "var(--bg2)", padding: "20px 24px", textAlign: "center" }}>
               <div style={{ fontFamily: "'Fraunces', serif", fontSize: 28, fontWeight: 800, color: "#D2A85C", letterSpacing: "-0.02em", lineHeight: 1 }}>{s.value}</div>
@@ -303,7 +378,7 @@ export default function Portfolio() {
       </div>
 
       {/* ──────── CONTENT ──────── */}
-      <div style={{ maxWidth: 1040, margin: "0 auto", padding: "0 48px" }}>
+      <div className="section-container" style={{ maxWidth: 1040, margin: "0 auto", padding: "0 48px" }}>
 
         {/* SKILLS */}
         <RevealOnScroll>
@@ -361,7 +436,7 @@ export default function Portfolio() {
         <RevealOnScroll>
           <div id="s-projects" style={{ paddingBottom: 64 }}>
             <SectionHead title="Projects" sub="Things I've built" />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div className="projects-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               {PROJECTS.map((p, i) => (
                 <div key={i} className="card" style={{ overflow: "hidden" }}>
                   {/* Top accent line */}
@@ -399,7 +474,7 @@ export default function Portfolio() {
         <RevealOnScroll>
           <div id="s-certifications" style={{ paddingBottom: 64 }}>
             <SectionHead title="Education & Certifications" sub="Academic background and credentials" />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: 16 }}>
+            <div className="edu-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: 16 }}>
 
               {/* Education */}
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -451,7 +526,7 @@ export default function Portfolio() {
         <RevealOnScroll>
           <div id="s-contact" style={{ paddingBottom: 80 }}>
             <SectionHead title="Contact" sub="Let's connect" />
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+            <div className="contact-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
               {[
                 { icon: "✉️", label: "Email", value: "manishkumar42002@gmail.com", href: "mailto:manishkumar42002@gmail.com" },
                 { icon: "📞", label: "Phone", value: "+91 8305-016-472", href: "tel:+918305016472" },
@@ -473,13 +548,13 @@ export default function Portfolio() {
       </div>
 
       {/* FOOTER */}
-      <div style={{ borderTop: "1px solid var(--border)", padding: "32px 48px", display: "flex", justifyContent: "center", alignItems: "center" }}>
-        <p style={{ fontSize: 13, color: "var(--text3)", fontWeight: 500, letterSpacing: "0.01em" }}>
+      <div className="footer-container" style={{ borderTop: "1px solid var(--border)", padding: "32px 48px", display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <p style={{ fontSize: 13, color: "var(--text3)", fontWeight: 500, letterSpacing: "0.01em", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <span style={{ fontFamily: "'Fraunces', serif", color: "var(--gold)", fontWeight: 700, fontSize: 15 }}>Manish Kumar</span>
-          <span style={{ margin: "0 12px", opacity: 0.5 }}>•</span>
-          Cloud & DevOps Engineer
-          <span style={{ margin: "0 12px", opacity: 0.5 }}>•</span>
-          Gwalior, M.P.
+          <span className="dot" style={{ margin: "0 12px", opacity: 0.5 }}>•</span>
+          <span>Cloud & DevOps Engineer</span>
+          <span className="dot" style={{ margin: "0 12px", opacity: 0.5 }}>•</span>
+          <span>Gwalior, M.P.</span>
         </p>
       </div>
     </div>
